@@ -1,15 +1,7 @@
-import java.io.*;
-import java.net.URISyntaxException;
-import java.nio.file.*;
 import java.sql.*;
-import java.util.*;
-import javax.sql.RowSet;
 import javax.sql.rowset.CachedRowSet;
 
 import javafx.application.*;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.Button;
@@ -25,41 +17,42 @@ import javafx.scene.control.*;
  * @author Rauf-ID Rauf Agaguliev
  */
 
-public class MyLittleDBMS extends Application{
+public class MyLittleDBMS extends Application {
+
+    private static final String version = "0.0.0";
+    private static final String title = "MyLittleDBMS " + version;
+    private static final int width = 960;
+    private static final int height = 540;
+
+    private DataPane dataPane;
+    private CachedRowSet cachedRowSet;
+    private ComboBox<String> tableNames;
+    private DatabaseManager databaseManager;
+
     public static void main(String[] args) {
         launch(args);
     }
 
-    private Properties props;
-    private Connection conn;
-    private ComboBox<String> tableNames;
-    private DataPane dataPane;
-    private CachedRowSet cachedRowSet;
-
     @Override
     public void start(Stage stage){
-        stage.setTitle("MyLittleDBMS");
+        stage.setTitle(title);
         BorderPane rootNode = new BorderPane();
-        Scene myScene = new Scene(rootNode,400,400);
+        Scene myScene = new Scene(rootNode, width, height);
         stage.setScene(myScene);
 
+        databaseManager = new DatabaseManager();
         tableNames = new ComboBox<>();
+
         try{
-            readDatabaseProperties();
-            conn = getConnection();
-            DatabaseMetaData meta = conn.getMetaData();
-            try(ResultSet mrs = meta.getTables(null, null, null,
-                    new String[] {"Table"})) {
-                while (mrs.next())
+            DatabaseMetaData meta = databaseManager.getConnection().getMetaData();
+            try(ResultSet mrs = meta.getTables(null, null, null, new String[] {"Table"})) {
+                while (mrs.next()) {
                     tableNames.getItems().add(mrs.getString(3));
+                }
             }
-        }
-        catch (SQLException ex){
+        } catch (SQLException ex){
             for(Throwable t: ex)
                 t.printStackTrace();
-        }
-        catch (IOException ex){
-            ex.printStackTrace();
         }
 
 
@@ -109,7 +102,7 @@ public class MyLittleDBMS extends Application{
     @Override
     public void stop(){
         try{
-            if(conn != null) conn.close();
+            if(databaseManager.getConnection() != null) databaseManager.getConnection().close();
         }
         catch (SQLException ex){
             for(Throwable t:ex)
@@ -120,31 +113,6 @@ public class MyLittleDBMS extends Application{
         }
     }
 
-    /**
-     * reading database properties to connect
-     * from file database.properties
-     *
-     * @throws IOException
-     */
-    private void readDatabaseProperties() throws IOException {
-        props = new Properties();
-        try {
-            try (InputStream in = Files.newInputStream(Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toURI())))
-            {
-                props.load(in);
-            }
-        }
 
-        catch (URISyntaxException ex){
-            ex.printStackTrace();
-        }
-    }
-
-    private Connection getConnection() throws SQLException{
-        String url = props.getProperty("jdbc.url");
-        String username = props.getProperty("jdbc.username");
-        String password = props.getProperty("jdbc.password");
-        return DriverManager.getConnection(url,username,password);
-    }
 }
 
