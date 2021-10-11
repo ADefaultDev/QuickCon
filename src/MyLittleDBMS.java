@@ -21,7 +21,8 @@ import javafx.scene.control.*;
 
 /**
  * @version 1.0 2021-10-09
- * @author Vsevolod Batyrov
+ * @author ADefaultDev Vsevolod Batyrov
+ * @author Rauf-ID Rauf Agaguliev
  */
 
 public class MyLittleDBMS extends Application{
@@ -35,12 +36,6 @@ public class MyLittleDBMS extends Application{
     private DataPane dataPane;
     private CachedRowSet cachedRowSet;
 
-    /**
-     *
-     * default javafx window creation
-     * using BorderPane layout to place components
-     *
-     */
     @Override
     public void start(Stage stage){
         stage.setTitle("MyLittleDBMS");
@@ -106,11 +101,6 @@ public class MyLittleDBMS extends Application{
 
     }
 
-    /**
-     * default javafx function override
-     * to close connection even if application
-     * stops because of error
-     */
     @Override
     public void stop(){
         try{
@@ -125,12 +115,6 @@ public class MyLittleDBMS extends Application{
         }
     }
 
-    /**
-     * reading database properties to connect
-     * from file database.properties
-     *
-     * @throws IOException
-     */
     private void readDatabaseProperties() throws IOException {
         props = new Properties();
         try {
