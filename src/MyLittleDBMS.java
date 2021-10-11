@@ -101,6 +101,11 @@ public class MyLittleDBMS extends Application{
 
     }
 
+    /**
+     * default javafx function override
+     * to close connection even if application
+     * stops because of error
+     */
     @Override
     public void stop(){
         try{
@@ -115,6 +120,12 @@ public class MyLittleDBMS extends Application{
         }
     }
 
+    /**
+     * reading database properties to connect
+     * from file database.properties
+     *
+     * @throws IOException
+     */
     private void readDatabaseProperties() throws IOException {
         props = new Properties();
         try {
