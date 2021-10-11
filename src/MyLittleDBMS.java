@@ -4,8 +4,12 @@ import java.nio.file.*;
 import java.sql.*;
 import java.util.*;
 import javax.sql.RowSet;
+import javax.sql.rowset.CachedRowSet;
 
 import javafx.application.*;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.Button;
@@ -28,6 +32,8 @@ public class MyLittleDBMS extends Application{
     private Properties props;
     private Connection conn;
     private ComboBox<String> tableNames;
+    private DataPane dataPane;
+    private CachedRowSet cachedRowSet;
 
     /**
      *
@@ -65,9 +71,17 @@ public class MyLittleDBMS extends Application{
         //Create buttons
         HBox buttonBox = new HBox();
         Button previousButton = new Button("Previous");
+        previousButton.setOnAction(actionEvent -> MLFunctions.previousAction(cachedRowSet,dataPane));
+
         Button nextButton = new Button("Next");
+        nextButton.setOnAction(actionEvent -> MLFunctions.nextAction(cachedRowSet,dataPane));
+
         Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(actionEvent -> MLFunctions.delete());
+
         Button saveButton = new Button("Save");
+        saveButton.setOnAction(actionEvent -> MLFunctions.save());
+
         buttonBox.getChildren().addAll(previousButton,nextButton,deleteButton,saveButton);
 
         buttonBox.setSpacing(50);
@@ -91,7 +105,6 @@ public class MyLittleDBMS extends Application{
         stage.show();
 
     }
-
 
     /**
      * default javafx function override
@@ -140,23 +153,3 @@ public class MyLittleDBMS extends Application{
     }
 }
 
-
-/**
- * defines better version of GridPane
- * using to show databases table values
- * and to change them
- */
-class DataPane extends GridPane{
-    private ArrayList<TextField> fields;
-
-    DataPane() {
-        super();
-        fields = new ArrayList<TextField>();
-        TextField tf = new TextField("dol");
-        fields.add(tf);
-        for (int i=0;i<fields.size();i++){
-            this.add(new Label("First"),0,0);
-            this.add(fields.get(i),1,0);
-        }
-    }
-}
