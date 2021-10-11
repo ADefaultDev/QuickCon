@@ -1,1 +1,1 @@
-# MyLittleDBMS
+# MyLittleDBMS (not a DBMS)
