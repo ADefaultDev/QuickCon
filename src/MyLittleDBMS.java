@@ -2,6 +2,8 @@ import java.sql.*;
 import javax.sql.rowset.CachedRowSet;
 
 import javafx.application.*;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.Button;
@@ -12,7 +14,7 @@ import javafx.scene.control.*;
 
 
 /**
- * @version 1.0 2021-10-09
+ * @version 1.0 2021-10-12
  * @author ADefaultDev Vsevolod Batyrov
  * @author Rauf-ID Rauf Agaguliev
  */
@@ -55,6 +57,8 @@ public class MyLittleDBMS extends Application {
                 t.printStackTrace();
         }
 
+        //If we choose combobox item, it will show table from DB
+        tableNames.setOnAction((actionEvent -> System.out.println(tableNames.getSelectionModel().getSelectedItem())));
 
         //Create buttons
         HBox buttonBox = new HBox();
@@ -86,7 +90,7 @@ public class MyLittleDBMS extends Application {
         rootNode.setTop(tableNamesBox);
 
         //Create changeable table
-        DataPane dataPane = new DataPane();
+        DataPane dataPane = new DataPane(cachedRowSet);
         dataPane.setAlignment(Pos.CENTER);
         rootNode.setCenter(dataPane);
 

@@ -15,7 +15,6 @@ public class DatabaseManager {
     private Connection connection;
 
     public DatabaseManager() {
-
         try {
             readDatabaseProperties();
             connection = getConnectionToDataBase();

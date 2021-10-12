@@ -2,6 +2,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
+import javax.sql.RowSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 public class DataPane extends GridPane {
     private ArrayList<TextField> fields;
 
-    DataPane() {
+    DataPane(RowSet rowSet) {
         super();
         fields = new ArrayList<TextField>();
         TextField tf = new TextField("dol");
