@@ -1,3 +1,4 @@
+import javafx.beans.binding.Bindings;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.ScrollPane;
@@ -26,12 +27,12 @@ public class MLFunctions {
             cachedRowSet.populate(result);
 
             dataPane = new DataPane(cachedRowSet);
-            dataPane.setAlignment(Pos.CENTER);
-            rootNode.setCenter(dataPane);
+//            dataPane.setAlignment(Pos.CENTER_RIGHT);
 
+            ScrollPane scrollPane = new ScrollPane();
+            scrollPane.setContent(dataPane);
+            rootNode.setCenter(scrollPane);
 
-            ScrollPane scrollPane = new ScrollPane(dataPane);
-            //add(scrollPane, BorderLayout.CENTER);
             showNextRow();
         } catch (SQLException ex){
             for(Throwable t:ex)

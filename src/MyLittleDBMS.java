@@ -46,9 +46,10 @@ public class MyLittleDBMS extends Application {
         ComboBox<String> tableNames = new ComboBox<>();
 
         try{
-            DatabaseMetaData meta = DatabaseManager.getConnection().getMetaData();
-            try(ResultSet mrs = meta.getTables(null, null, null, new String[] {"TABLE"})) {
-                while (mrs.next()) tableNames.getItems().add(mrs.getString(3));
+            try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
+                while (result.next()) {
+                    tableNames.getItems().add(result.getString(1));
+                }
             }
         } catch (SQLException ex){
             for(Throwable t: ex)
@@ -56,9 +57,7 @@ public class MyLittleDBMS extends Application {
         }
 
         //If we choose combobox item, it will show table from DB
-//        tableNames.setOnAction((actionEvent -> System.out.println(tableNames.getSelectionModel().getSelectedItem())));
         tableNames.setOnAction((actionEvent -> mlFunctions.showTable( (String) tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode)));
-
 
         //Create buttons
         HBox buttonBox = new HBox();

@@ -1,1 +1,1 @@
-# MyLittleDBMS (not a DBMS)
+# QuickCon (old MyLittleDBMS (not a DBMS))
