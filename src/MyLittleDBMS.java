@@ -2,8 +2,6 @@ import java.sql.*;
 import javax.sql.rowset.CachedRowSet;
 
 import javafx.application.*;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.control.Button;
@@ -28,7 +26,8 @@ public class MyLittleDBMS extends Application {
 
     private DataPane dataPane;
     private CachedRowSet cachedRowSet;
-    private ComboBox<String> tableNames;
+
+    private MLFunctions mlFunctions;
     private DatabaseManager databaseManager;
 
     public static void main(String[] args) {
@@ -42,15 +41,14 @@ public class MyLittleDBMS extends Application {
         Scene myScene = new Scene(rootNode, width, height);
         stage.setScene(myScene);
 
+        mlFunctions = new MLFunctions();
         databaseManager = new DatabaseManager();
-        tableNames = new ComboBox<>();
+        ComboBox<String> tableNames = new ComboBox<>();
 
         try{
-            DatabaseMetaData meta = databaseManager.getConnection().getMetaData();
-            try(ResultSet mrs = meta.getTables(null, null, null, new String[] {"Table"})) {
-                while (mrs.next()) {
-                    tableNames.getItems().add(mrs.getString(3));
-                }
+            DatabaseMetaData meta = DatabaseManager.getConnection().getMetaData();
+            try(ResultSet mrs = meta.getTables(null, null, null, new String[] {"TABLE"})) {
+                while (mrs.next()) tableNames.getItems().add(mrs.getString(3));
             }
         } catch (SQLException ex){
             for(Throwable t: ex)
@@ -58,27 +56,30 @@ public class MyLittleDBMS extends Application {
         }
 
         //If we choose combobox item, it will show table from DB
-        tableNames.setOnAction((actionEvent -> System.out.println(tableNames.getSelectionModel().getSelectedItem())));
+//        tableNames.setOnAction((actionEvent -> System.out.println(tableNames.getSelectionModel().getSelectedItem())));
+        tableNames.setOnAction((actionEvent -> mlFunctions.showTable( (String) tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode)));
+
 
         //Create buttons
         HBox buttonBox = new HBox();
+
         Button previousButton = new Button("Previous");
-        previousButton.setOnAction(actionEvent -> MLFunctions.previousAction(cachedRowSet,dataPane));
+        previousButton.setOnAction(actionEvent -> mlFunctions.previousAction(cachedRowSet, dataPane));
 
         Button nextButton = new Button("Next");
-        nextButton.setOnAction(actionEvent -> MLFunctions.nextAction(cachedRowSet,dataPane));
+        nextButton.setOnAction(actionEvent -> mlFunctions.nextAction(cachedRowSet, dataPane));
 
         Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(actionEvent -> MLFunctions.delete());
+        deleteButton.setOnAction(actionEvent -> mlFunctions.delete());
 
         Button saveButton = new Button("Save");
-        saveButton.setOnAction(actionEvent -> MLFunctions.save());
+        saveButton.setOnAction(actionEvent -> mlFunctions.save());
 
         buttonBox.getChildren().addAll(previousButton,nextButton,deleteButton,saveButton);
-
         buttonBox.setSpacing(50);
         buttonBox.setAlignment(Pos.CENTER);
         rootNode.setBottom(buttonBox);
+
 
         //Create table names
         HBox tableNamesBox = new HBox();
@@ -89,34 +90,27 @@ public class MyLittleDBMS extends Application {
         tableNamesBox.setAlignment(Pos.CENTER);
         rootNode.setTop(tableNamesBox);
 
-        //Create changeable table
-        DataPane dataPane = new DataPane(cachedRowSet);
-        dataPane.setAlignment(Pos.CENTER);
-        rootNode.setCenter(dataPane);
+
+        //Create changeable table !!! NOW INITIALIZED IN MLFunctions:28
+//        DataPane dataPane = new DataPane(cachedRowSet);
+//        dataPane.setAlignment(Pos.CENTER);
+//        rootNode.setCenter(dataPane);
 
         stage.show();
 
     }
 
-    /**
-     * default javafx function override
-     * to close connection even if application
-     * stops because of error
-     */
     @Override
     public void stop(){
         try{
             if(databaseManager.getConnection() != null) databaseManager.getConnection().close();
-        }
-        catch (SQLException ex){
+        } catch (SQLException ex){
             for(Throwable t:ex)
                 t.printStackTrace();
-        }
-        finally {
+        } finally {
             System.out.println("The application has been stopped");
         }
     }
-
 
 }
 

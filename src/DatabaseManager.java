@@ -12,7 +12,7 @@ import java.util.Properties;
 public class DatabaseManager {
 
     private Properties props;
-    private Connection connection;
+    private static Connection connection;
 
     public DatabaseManager() {
         try {
@@ -44,7 +44,7 @@ public class DatabaseManager {
         return DriverManager.getConnection(url, username, password);
     }
 
-    public Connection getConnection() {
+    public static Connection getConnection() {
         return connection;
     }
 }
