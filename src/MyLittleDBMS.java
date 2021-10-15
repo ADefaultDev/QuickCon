@@ -63,16 +63,20 @@ public class MyLittleDBMS extends Application {
         HBox buttonBox = new HBox();
 
         Button previousButton = new Button("Previous");
-        previousButton.setOnAction(actionEvent -> mlFunctions.previousAction(cachedRowSet, dataPane));
+        //previousButton.setOnAction(actionEvent -> mlFunctions.previousAction(cachedRowSet, dataPane));
 
         Button nextButton = new Button("Next");
-        nextButton.setOnAction(actionEvent -> mlFunctions.nextAction(cachedRowSet, dataPane));
+        //nextButton.setOnAction(actionEvent -> mlFunctions.nextAction(cachedRowSet, dataPane));
 
         Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(actionEvent -> mlFunctions.delete());
+        deleteButton.setOnAction(actionEvent -> {
+            mlFunctions.delete();
+            mlFunctions.showTable( (String) tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode);
+        });
 
         Button saveButton = new Button("Save");
-        saveButton.setOnAction(actionEvent -> mlFunctions.save());
+        //saveButton.setOnAction(actionEvent -> mlFunctions.save());
 
         buttonBox.getChildren().addAll(previousButton,nextButton,deleteButton,saveButton);
         buttonBox.setSpacing(50);
@@ -102,7 +106,7 @@ public class MyLittleDBMS extends Application {
     @Override
     public void stop(){
         try{
-            if(databaseManager.getConnection() != null) databaseManager.getConnection().close();
+            if(DatabaseManager.getConnection() != null) DatabaseManager.getConnection().close();
         } catch (SQLException ex){
             for(Throwable t:ex)
                 t.printStackTrace();

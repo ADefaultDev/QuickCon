@@ -9,15 +9,16 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Properties;
 
-public class DatabaseManager {
+class DatabaseManager {
 
     private Properties props;
     private static Connection connection;
 
-    public DatabaseManager() {
+    DatabaseManager() {
         try {
             readDatabaseProperties();
             connection = getConnectionToDataBase();
+            connection.setAutoCommit(false);
         } catch (IOException ex) {
             ex.printStackTrace();
         } catch (SQLException ex) {
@@ -44,7 +45,7 @@ public class DatabaseManager {
         return DriverManager.getConnection(url, username, password);
     }
 
-    public static Connection getConnection() {
+    static Connection getConnection() {
         return connection;
     }
 }
