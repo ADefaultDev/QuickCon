@@ -45,6 +45,10 @@ class DatabaseManager {
         return DriverManager.getConnection(url, username, password);
     }
 
+    public String getDatabase() {
+        return props.getProperty("jdbc.database");
+    }
+
     static Connection getConnection() {
         return connection;
     }
