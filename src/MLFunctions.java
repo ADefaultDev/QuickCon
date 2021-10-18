@@ -30,10 +30,9 @@ class MLFunctions {
 
             dataPane = new DataPane(cachedRowSet);
 
-
             ScrollPane scrollPane = new ScrollPane();
             scrollPane.setContent(dataPane);
-            dataPane.setPadding(new Insets(3,3,3,3));
+            dataPane.setPadding(new Insets(20,20,20,20));
             rootNode.setCenter(scrollPane);
 
         } catch (SQLException ex){
@@ -41,7 +40,6 @@ class MLFunctions {
                 t.printStackTrace();
         }
     }
-
 
     void delete(){
         System.out.println("Delete method started");
@@ -73,6 +71,7 @@ class MLFunctions {
         }
 
     }
+
 /*    public void save(){
         if(cachedRowSet == null) return;
         new Task<Void>(){

@@ -19,10 +19,10 @@ import javafx.scene.control.*;
 
 public class MyLittleDBMS extends Application {
 
-    private static final String version = "0.0.0";
-    private static final String title = "MyLittleDBMS " + version;
-    private static final int width = 960;
-    private static final int height = 540;
+    private static final String version = "0.1";
+    private static final String title = "QuickCon " + version;
+    private static final int width = 1440; // 960 // 1440
+    private static final int height = 810; // 540 // 810
 
     private DataPane dataPane;
     private CachedRowSet cachedRowSet;
@@ -45,44 +45,33 @@ public class MyLittleDBMS extends Application {
         databaseManager = new DatabaseManager();
         ComboBox<String> tableNames = new ComboBox<>();
 
-        try{
-            try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
-                while (result.next()) {
-                    tableNames.getItems().add(result.getString(1));
-                }
+        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
+            while (result.next()) {
+                tableNames.getItems().add(result.getString(1));
             }
         } catch (SQLException ex){
-            for(Throwable t: ex)
-                t.printStackTrace();
+            ex.printStackTrace();
         }
 
         //If we choose combobox item, it will show table from DB
-        tableNames.setOnAction((actionEvent -> mlFunctions.showTable( (String) tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode)));
+        tableNames.setOnAction((actionEvent -> mlFunctions.showTable(tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode)));
 
         //Create buttons
         HBox buttonBox = new HBox();
 
-        Button previousButton = new Button("Previous");
-        //previousButton.setOnAction(actionEvent -> mlFunctions.previousAction(cachedRowSet, dataPane));
-
-        Button nextButton = new Button("Next");
-        //nextButton.setOnAction(actionEvent -> mlFunctions.nextAction(cachedRowSet, dataPane));
-
         Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(actionEvent -> mlFunctions.delete());
         deleteButton.setOnAction(actionEvent -> {
             mlFunctions.delete();
-            mlFunctions.showTable( (String) tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode);
+            mlFunctions.showTable(tableNames.getSelectionModel().getSelectedItem(), DatabaseManager.getConnection(), rootNode);
         });
 
         Button saveButton = new Button("Save");
         //saveButton.setOnAction(actionEvent -> mlFunctions.save());
 
-        buttonBox.getChildren().addAll(previousButton,nextButton,deleteButton,saveButton);
+        buttonBox.getChildren().addAll(deleteButton, saveButton);
         buttonBox.setSpacing(50);
         buttonBox.setAlignment(Pos.CENTER);
         rootNode.setBottom(buttonBox);
-
 
         //Create table names
         HBox tableNamesBox = new HBox();
@@ -93,14 +82,7 @@ public class MyLittleDBMS extends Application {
         tableNamesBox.setAlignment(Pos.CENTER);
         rootNode.setTop(tableNamesBox);
 
-
-        //Create changeable table !!! NOW INITIALIZED IN MLFunctions:28
-//        DataPane dataPane = new DataPane(cachedRowSet);
-//        dataPane.setAlignment(Pos.CENTER);
-//        rootNode.setCenter(dataPane);
-
         stage.show();
-
     }
 
     @Override

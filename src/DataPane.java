@@ -27,32 +27,28 @@ public class DataPane extends GridPane {
         data = new ArrayList<>();
         this.cachedRowSet = rowSet;
         ResultSetMetaData metaData = rowSet.getMetaData();
-        System.out.println("Count of columns in a table " + metaData.getTableName(1).toUpperCase() + ": " + metaData.getColumnCount());
         int countOfColumn = metaData.getColumnCount() + 1 ;
         for (int i = 1; i < countOfColumn; i++)
             columnNames.add(metaData.getColumnName(i)); // adding name of columns in array
-
         while (rowSet.next()) {
             ArrayList<Object> row = new ArrayList<>();
             for (int i = 1; i < countOfColumn; i++)
                 row.add(rowSet.getObject(i).toString()); // filling a row with values
             data.add(row); // adding a filled row to an array
         }
-        this.showRow();
-
+//        System.out.println("Count of columns: " + metaData.getColumnCount() + " | Count of data: " + data.size());
+//        System.out.println();
+        this.createTable();
     }
 
     private void demo() throws SQLException{
         System.out.println(cachedRowSet.size());
         cachedRowSet.last();
-        System.out.println( cachedRowSet.getString(2));
+        System.out.println(cachedRowSet.getString(2));
 
     }
 
-
-    private void showRow(){
-
-        //create a table
+    private void createTable(){
         this.setVgap(10); // The height of the vertical gaps between rows.
         this.setHgap(40); // The width of the horizontal gaps between columns.
         this.add(new Label(""),0,0);
