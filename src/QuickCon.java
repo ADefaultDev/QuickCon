@@ -1,16 +1,20 @@
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import javafx.scene.control.TableColumn.CellEditEvent;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 
@@ -25,7 +29,6 @@ public class QuickCon  extends Application {
     private BorderPane rootNode;
     private DatabaseManager databaseManager;
     private TreeView<String> treeView;
-    private ObservableList<ObservableList> data;
     private TableView tableview;
 
     public static void main(String[] args) {
@@ -48,7 +51,7 @@ public class QuickCon  extends Application {
             ex.printStackTrace();
         }
         try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
-            while (result.next())                 tableNames.add(result.getString(1));
+            while (result.next()) tableNames.add(result.getString(1));
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -80,7 +83,6 @@ public class QuickCon  extends Application {
                 TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
                 if (item.getValue() != null)
                     if (item.getParent().getValue().equals("tables"))
-                        System.out.println(item.getValue());
                         createTable(item.getValue());
             }
         });
@@ -102,21 +104,34 @@ public class QuickCon  extends Application {
 
     public void createTable(String tableName){
         tableview = new TableView();
-        tableview.setEditable(true);
 
-        data = FXCollections.observableArrayList();
+        ObservableList<ObservableList> data = FXCollections.observableArrayList();
         try (Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SELECT * FROM " + tableName)) {
             for(int i = 0 ; i < result.getMetaData().getColumnCount(); i++){
                 final int j = i;
                 TableColumn col = new TableColumn(result.getMetaData().getColumnName(1 + i));
-                col.setCellValueFactory((Callback<CellDataFeatures<ObservableList, String>, ObservableValue<String>>) param ->
-                        new SimpleStringProperty(param.getValue().get(j).toString()));
-                tableview.getColumns().addAll(col);
+                col.setCellValueFactory((Callback<CellDataFeatures<ObservableList, String>, ObservableValue<String>>) param -> {
+//                    System.out.println(param.getValue().get(j).toString());
+                    return new SimpleStringProperty(param.getValue().get(j).toString());
+                });
+                //Accept changes in the table and overwrites them
+                col.setCellFactory(TextFieldTableCell.forTableColumn());
+                col.setOnEditCommit((EventHandler<CellEditEvent<ObservableList, String>>) t -> {
+                            int col1 = t.getTablePosition().getColumn();
+                            int row = t.getTablePosition().getRow();
+                            String newValue = t.getNewValue();
+                            t.getTableView().getItems().get(row).set(col1, newValue);
+                            System.out.println();
+                        }
+                );
+                col.setSortable(false);
+                tableview.getColumns().add(col);
             }
             while(result.next()){
                 ObservableList<String> row = FXCollections.observableArrayList();
-                for(int i=1 ; i<=result.getMetaData().getColumnCount(); i++)
+                for(int i=1 ; i <= result.getMetaData().getColumnCount(); i++) {
                     row.add(result.getString(i));
+                }
                 data.add(row);
             }
             tableview.setItems(data);
@@ -124,6 +139,8 @@ public class QuickCon  extends Application {
             ex.printStackTrace();
         }
 
+        tableview.setEditable(true);
+        tableview.setFixedCellSize(data.size());
         rootNode.setCenter(tableview);
     }
 
