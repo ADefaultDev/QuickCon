@@ -52,4 +52,17 @@ class DatabaseManager {
     static Connection getConnection() {
         return connection;
     }
+
+    public void reconnection() {
+        try {
+            readDatabaseProperties();
+            connection = getConnectionToDataBase();
+            connection.setAutoCommit(false);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (SQLException ex) {
+            for(Throwable t: ex)
+                t.printStackTrace();
+        }
+    }
 }
