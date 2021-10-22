@@ -4,17 +4,19 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.*;
 import javafx.util.Callback;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import javafx.scene.control.TableColumn.CellEditEvent;
+import javafx.util.Duration;
 
+import java.awt.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -22,7 +24,7 @@ import java.util.TreeMap;
 
 public class QuickCon  extends Application {
 
-    private static final String version = "0.1";
+    private static final String version = "0.2";
     private static final String title = "QuickCon " + version;
     private static final int width = 1440; // 960 // 1440
     private static final int height = 810; // 540 // 810
@@ -57,58 +59,6 @@ public class QuickCon  extends Application {
         Scene myScene = new Scene(rootNode, width, height);
         stage.setScene(myScene);
         stage.show();
-    }
-
-    public void getDatabasesAndTables() {
-        //get names of databases and their tables
-        databaseNames = new ArrayList<>();
-        tableNames = new ArrayList<>();
-        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW DATABASES")) {
-            while (result.next()) databaseNames.add(result.getString(1));
-        } catch (SQLException ex){
-            ex.printStackTrace();
-        }
-        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
-            while (result.next()) tableNames.add(result.getString(1));
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public void createTree() {
-        //Root tree
-        TreeItem<String> root = new TreeItem<>();
-        //DBMS next tree
-        TreeItem<String> DBMS = makeBranches("MySQL - @localhost", root);
-        DBMS.setExpanded(true);
-        //Create tree for databases and their tables
-        for (String nameDatabase: databaseNames) {
-            TreeItem<String> database = makeBranches(nameDatabase, DBMS);
-            database.setExpanded(true);
-            String currentDatabase = database.getValue();
-            if (currentDatabase.toString().equals(databaseManager.getDatabase())) {
-                TreeItem<String> nodeTable = makeBranches("tables", database); // should be one block higher
-                nodeTable.setExpanded(true);
-                for (String nameTable: tableNames) {
-                    TreeItem<String> tableDB = makeBranches(nameTable, nodeTable);
-                    tableDB.setExpanded(true);
-                }
-            }
-        }
-        treeView = new TreeView<>(root);
-        treeView.setShowRoot(false);
-        treeView.setOnMouseClicked(mouseEvent -> {
-            if(mouseEvent.getClickCount() == 2)
-            {
-                TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
-                if (item.getValue() != null)
-                    if (item.getParent().getValue().equals("tables")) {
-                        tableN = item.getValue();
-                        createTable(tableN);
-                    }
-            }
-        });
-        rootNode.setLeft(treeView);
     }
 
     public void createTable(String tableName){
@@ -160,36 +110,85 @@ public class QuickCon  extends Application {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-
+        tableview.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableview.setEditable(true);
         rootNode.setCenter(tableview);
+    }
+
+    public void getDatabasesAndTables() {
+        //get names of databases and their tables
+        databaseNames = new ArrayList<>();
+        tableNames = new ArrayList<>();
+        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW DATABASES")) {
+            while (result.next()) databaseNames.add(result.getString(1));
+        } catch (SQLException ex){
+            ex.printStackTrace();
+        }
+        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
+            while (result.next()) tableNames.add(result.getString(1));
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void createTree() {
+        //Root tree
+        TreeItem<String> root = new TreeItem<>();
+        //DBMS next tree
+        TreeItem<String> DBMS = makeBranch("MySQL - @localhost", root);
+        DBMS.setExpanded(true);
+        //Create tree for databases and their tables
+        for (String nameDatabase: databaseNames) {
+            TreeItem<String> database = makeBranch(nameDatabase, DBMS);
+            database.setExpanded(true);
+            String currentDatabase = database.getValue();
+            if (currentDatabase.toString().equals(databaseManager.getDatabase())) {
+                TreeItem<String> nodeTable = makeBranch("tables", database); // should be one block higher
+                nodeTable.setExpanded(true);
+                for (String nameTable: tableNames) {
+                    TreeItem<String> tableDB = makeBranch(nameTable, nodeTable);
+                    tableDB.setExpanded(true);
+                }
+            }
+        }
+        treeView = new TreeView<>(root);
+        treeView.setShowRoot(false);
+        treeView.setOnMouseClicked(mouseEvent -> {
+            if(mouseEvent.getClickCount() == 2)
+            {
+                TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
+                if (item.getValue() != null)
+                    if (item.getParent().getValue().equals("tables")) {
+                        tableN = item.getValue();
+                        createTable(tableN);
+                    }
+            }
+        });
+        rootNode.setLeft(treeView);
     }
 
     public void createButtons() {
         HBox buttonBox = new HBox();
 
-        Button reload = new Button("Reload");
+        Button reload = makeButton("Reload", true, "Reload Page", 0.5f);
         reload.setOnAction(actionEvent -> {
             reloadTable();
         });
 
-        Button submit = new Button("Submit");
+        Button delete = makeButton("-", true, "Delete Row", 0.5f);
+        delete.setOnAction(actionEvent -> {
+            deleteRow();
+        });
+
+        Button submit = makeButton("Submit", true, "Submit", 0.5f);
         submit.setOnAction(actionEvent -> {
             submitChanges();
         });
 
-        buttonBox.getChildren().addAll(reload, submit);
+        buttonBox.getChildren().addAll(reload, delete, submit);
         buttonBox.setSpacing(50);
         buttonBox.setAlignment(Pos.CENTER);
         rootNode.setTop(buttonBox);
-    }
-
-
-    public TreeItem<String> makeBranches(String title, TreeItem<String> parent) {
-        TreeItem<String> item = new TreeItem<>(title);
-        item.setExpanded(false);
-        parent.getChildren().add(item);
-        return item;
     }
 
     public void submitChanges() {
@@ -200,7 +199,7 @@ public class QuickCon  extends Application {
                 StringBuilder arg = new StringBuilder();
                 arg.append(start);
                 for (String key2: dataForQueries.get(key).keySet()) {
-                    arg.append(key2).append("=").append(dataForQueries.get(key).get(key2));
+                    arg.append(key2).append("=").append("'").append(dataForQueries.get(key).get(key2)).append("'");
                     if (!dataForQueries.get(key).lastKey().equals(key2)) {
                         arg.append(", ");
                     }
@@ -208,23 +207,33 @@ public class QuickCon  extends Application {
                 arg.append(" WHERE ").append(columnNames.get(0)).append("=").append(key);
                 queries.add(String.valueOf(arg));
             }
-            System.out.println(queries);
+            dataForQueries.clear();
 
+//            System.out.println(queries);
+//            System.out.println(dataForQueries);
+
+            int count = 0;
             for (String query: queries) {
-                int count = statement.executeUpdate(query);
-                System.out.println("Updated queries: "+count);
+                count += statement.executeUpdate(query);
+                if (count == queries.size()) {
+                    System.out.println("Successful query: UPDATE " + count);
+                }
             }
+            queries.clear();
+
+
 //            String updateQ = "UPDATE wp_terms SET name='r1r', slug='z1z', term_group=5 WHERE term_id=2;";
-//            String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('khm', 'khm', 0);";
+//            String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
 //            int count = statement.executeUpdate(insertQ);
 //            System.out.println("Updated queries: " + count);
 
+
+            DatabaseManager.getConnection().commit();
+            createTable(tableN);
+            tableview.refresh();
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-
-//        System.out.println(dataForQueries);
-
     }
 
     public void reloadTable() {
@@ -234,6 +243,40 @@ public class QuickCon  extends Application {
         createTable(tableN);
     }
 
+    public void deleteRow() {
+//        try {
+//            DatabaseMetaData metaData = DatabaseManager.getConnection().getMetaData();
+//            ResultSet rs = metaData.getPrimaryKeys(databaseManager.getDatabase(), null, tableN);
+//            while (rs.next()){
+//                System.out.println("Column name: " + rs.getString("COLUMN_NAME"));
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+
+        ObservableList o = (ObservableList) tableview.getSelectionModel().getSelectedItem();
+        if (o != null) {
+            String deleteQ = "DELETE FROM " + tableN + " WHERE " + columnNames.get(0) + "='" + o.get(0) + "'";
+            queries.add(deleteQ);
+        }
+    }
+
+    public TreeItem<String> makeBranch(String title, TreeItem<String> parent) {
+        TreeItem<String> item = new TreeItem<>(title);
+        item.setExpanded(false);
+        parent.getChildren().add(item);
+        return item;
+    }
+
+    public Button makeButton(String nameButton, boolean isTooltip, String nameTooltip, float tooltipDuration) {
+        Button button = new Button(nameButton);
+        if (isTooltip) {
+            Tooltip tooltip = new Tooltip(nameTooltip);
+            tooltip.setShowDelay(Duration.seconds(tooltipDuration));
+            button.setTooltip(tooltip);
+        }
+        return button;
+    }
 
     @Override
     public void stop(){
@@ -246,7 +289,5 @@ public class QuickCon  extends Application {
             System.out.println("The application has been stopped");
         }
     }
-
-
 
 }
