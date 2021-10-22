@@ -110,6 +110,7 @@ public class QuickCon  extends Application {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+
         tableview.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableview.setEditable(true);
         rootNode.setCenter(tableview);
@@ -254,8 +255,11 @@ public class QuickCon  extends Application {
 //            e.printStackTrace();
 //        }
 
+
         ObservableList o = (ObservableList) tableview.getSelectionModel().getSelectedItem();
         if (o != null) {
+            tableview.setStyle("-fx-selection-bar-non-focused: salmon;");
+            tableview.getSelectionModel().clearAndSelect(tableview.getSelectionModel().getSelectedIndex());
             String deleteQ = "DELETE FROM " + tableN + " WHERE " + columnNames.get(0) + "='" + o.get(0) + "'";
             queries.add(deleteQ);
         }
