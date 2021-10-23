@@ -39,7 +39,9 @@ public class QuickCon  extends Application {
     private ArrayList<String> columnNames;
 
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
-    private ArrayList<String> queries = new ArrayList<>();
+    private ArrayList<String> queries;
+    private ArrayList<Integer> deletedIndex;
+
 
     public static void main(String[] args) {
         launch(args);
@@ -65,6 +67,8 @@ public class QuickCon  extends Application {
         tableview = new TableView();
         columnNames = new ArrayList<>();
         dataForQueries = new TreeMap<>();
+        queries = new ArrayList<>();
+        deletedIndex = new ArrayList<>();
 
         ObservableList<ObservableList> data = FXCollections.observableArrayList();
         try (Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SELECT * FROM " + tableName)) {
@@ -194,7 +198,10 @@ public class QuickCon  extends Application {
 
     public void submitChanges() {
         try(Statement statement = DatabaseManager.getConnection().createStatement()) {
-            //create a request and add it to the array
+//            String updateQ = "UPDATE wp_terms SET name='r1r', slug='z1z', term_group=5 WHERE term_id=2;";
+//            String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
+
+//            create a UPDATE request and add it to the array
             String start = "UPDATE " + tableN + " SET ";
             for (String key: dataForQueries.keySet()) {
                 StringBuilder arg = new StringBuilder();
@@ -205,43 +212,26 @@ public class QuickCon  extends Application {
                         arg.append(", ");
                     }
                 }
-                arg.append(" WHERE ").append(columnNames.get(0)).append("=").append(key);
+                arg.append(" WHERE ").append(columnNames.get(0)).append("=").append("'").append(key).append("'");
                 queries.add(String.valueOf(arg));
             }
-            dataForQueries.clear();
-
-//            System.out.println(queries);
 //            System.out.println(dataForQueries);
+            dataForQueries.clear();
 
             int count = 0;
             for (String query: queries) {
                 count += statement.executeUpdate(query);
-                if (count == queries.size()) {
-                    System.out.println("Successful query: UPDATE " + count);
+                if (count > 0) {
+                    System.out.println("Successful query: " + query);
                 }
             }
             queries.clear();
 
-
-//            String updateQ = "UPDATE wp_terms SET name='r1r', slug='z1z', term_group=5 WHERE term_id=2;";
-//            String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
-//            int count = statement.executeUpdate(insertQ);
-//            System.out.println("Updated queries: " + count);
-
-
             DatabaseManager.getConnection().commit();
             createTable(tableN);
-            tableview.refresh();
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-    }
-
-    public void reloadTable() {
-        databaseManager.reconnection();
-        getDatabasesAndTables();
-        createTree();
-        createTable(tableN);
     }
 
     public void deleteRow() {
@@ -255,14 +245,21 @@ public class QuickCon  extends Application {
 //            e.printStackTrace();
 //        }
 
-
         ObservableList o = (ObservableList) tableview.getSelectionModel().getSelectedItem();
-        if (o != null) {
+        int indexRow = tableview.getSelectionModel().getSelectedIndex();
+        if (o != null && !deletedIndex.contains(indexRow)) {
             tableview.setStyle("-fx-selection-bar-non-focused: salmon;");
-            tableview.getSelectionModel().clearAndSelect(tableview.getSelectionModel().getSelectedIndex());
             String deleteQ = "DELETE FROM " + tableN + " WHERE " + columnNames.get(0) + "='" + o.get(0) + "'";
             queries.add(deleteQ);
         }
+        deletedIndex.add(indexRow);
+    }
+
+    public void reloadTable() {
+        databaseManager.reconnection();
+        getDatabasesAndTables();
+        createTree();
+        createTable(tableN);
     }
 
     public TreeItem<String> makeBranch(String title, TreeItem<String> parent) {
