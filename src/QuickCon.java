@@ -16,13 +16,11 @@ import javafx.stage.Stage;
 import javafx.scene.control.TableColumn.CellEditEvent;
 import javafx.util.Duration;
 
-import java.awt.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-
-public class QuickCon  extends Application {
+public class QuickCon extends Application {
 
     private static final String version = "0.2";
     private static final String title = "QuickCon " + version;
@@ -41,7 +39,6 @@ public class QuickCon  extends Application {
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
     private ArrayList<String> queries;
     private ArrayList<Integer> deletedIndex;
-
 
     public static void main(String[] args) {
         launch(args);
@@ -218,9 +215,8 @@ public class QuickCon  extends Application {
 //            System.out.println(dataForQueries);
             dataForQueries.clear();
 
-            int count = 0;
             for (String query: queries) {
-                count += statement.executeUpdate(query);
+                int count = statement.executeUpdate(query);
                 if (count > 0) {
                     System.out.println("Successful query: " + query);
                 }
