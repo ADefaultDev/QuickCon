@@ -1,12 +1,16 @@
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
 import javafx.collections.FXCollections;
@@ -27,7 +31,10 @@ public class QuickCon extends Application {
     private static final int width = 1440; // 960 // 1440
     private static final int height = 810; // 540 // 810
 
+    private Stage stage;
     private BorderPane rootNode;
+    private VBox vBoxLeft, vBoxCenter;
+
     private DatabaseManager databaseManager;
     private TreeView<String> treeView;
     private TableView tableview;
@@ -45,15 +52,20 @@ public class QuickCon extends Application {
     }
 
     @Override
-    public void start(Stage stage) {
+    public void start(Stage none) {
+        stage = none;
         stage.setTitle(title);
-
-        rootNode = new BorderPane();
         databaseManager = new DatabaseManager();
 
+        rootNode = new BorderPane();
+        vBoxLeft = new VBox();
+        vBoxCenter = new VBox();
+
         getDatabasesAndTables();
+        createToolBar();
         createTree();
-        createButtons();
+
+        rootNode.setLeft(vBoxLeft);
 
         Scene myScene = new Scene(rootNode, width, height);
         stage.setScene(myScene);
@@ -61,6 +73,8 @@ public class QuickCon extends Application {
     }
 
     public void createTable(String tableName){
+        vBoxCenter.getChildren().clear();
+        createButtons();
         tableview = new TableView();
         columnNames = new ArrayList<>();
         dataForQueries = new TreeMap<>();
@@ -114,7 +128,8 @@ public class QuickCon extends Application {
 
         tableview.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableview.setEditable(true);
-        rootNode.setCenter(tableview);
+        vBoxCenter.getChildren().add(tableview);
+        rootNode.setCenter(vBoxCenter);
     }
 
     public void getDatabasesAndTables() {
@@ -166,7 +181,7 @@ public class QuickCon extends Application {
                     }
             }
         });
-        rootNode.setLeft(treeView);
+        vBoxLeft.getChildren().add(treeView);
     }
 
     public void createButtons() {
@@ -188,9 +203,54 @@ public class QuickCon extends Application {
         });
 
         buttonBox.getChildren().addAll(reload, delete, submit);
-        buttonBox.setSpacing(50);
-        buttonBox.setAlignment(Pos.CENTER);
-        rootNode.setTop(buttonBox);
+        buttonBox.setSpacing(30);
+        vBoxCenter.getChildren().add(buttonBox);
+    }
+
+    public void createToolBar() {
+        MenuButton newDBMS = new MenuButton("+");
+        Tooltip tooltip = new Tooltip("New connections to DBMS");
+        tooltip.setShowDelay(Duration.seconds(0.5f));
+        newDBMS.setTooltip(tooltip);
+
+        MenuItem mySQL = new MenuItem("MySQL");
+        mySQL.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                Stage newWindow = new Stage();
+                newWindow.setTitle("Data Source");
+
+                Label labelHost = new Label("Host:");
+                TextField textFieldHost = new TextField();
+
+                Label label2 = new Label("Port");
+
+                FlowPane flowPane = new FlowPane();
+                flowPane.setHgap(50);
+                flowPane.setMargin(labelHost, new Insets(20, 0, 20, 20));
+                ObservableList list = flowPane.getChildren();
+                list.addAll(labelHost, textFieldHost);
+
+                TabPane tabPane = new TabPane();
+                Tab tab1 = new Tab("General");
+                tabPane.getTabs().addAll(tab1);
+
+
+
+                VBox vBox = new VBox();
+                vBox.getChildren().addAll(flowPane, tabPane);
+
+                Scene secondScene = new Scene(vBox, 960, 540);
+                newWindow.initOwner(stage);
+                newWindow.setScene(secondScene);
+                newWindow.show();
+            }
+        });
+        newDBMS.getItems().addAll(mySQL);
+
+        ToolBar toolBar = new ToolBar();
+        toolBar.getItems().addAll(newDBMS);
+        vBoxLeft.getChildren().add(toolBar);
     }
 
     public void submitChanges() {
@@ -252,10 +312,17 @@ public class QuickCon extends Application {
     }
 
     public void reloadTable() {
+        vBoxLeft.getChildren().clear();
+        vBoxCenter.getChildren().clear();
         databaseManager.reconnection();
         getDatabasesAndTables();
+        createToolBar();
         createTree();
         createTable(tableN);
+    }
+
+    public void reloadTree() {
+
     }
 
     public TreeItem<String> makeBranch(String title, TreeItem<String> parent) {
