@@ -1,9 +1,11 @@
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
@@ -33,7 +35,7 @@ public class QuickCon extends Application {
 
     private Stage stage;
     private BorderPane rootNode;
-    private VBox vBoxLeft, vBoxCenter;
+    private VBox vBoxLeft, vBoxCenter, vBoxRight, vBoxTop, vBoxBottom;
 
     private DatabaseManager databaseManager;
     private TreeView<String> treeView;
@@ -45,7 +47,6 @@ public class QuickCon extends Application {
 
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
     private ArrayList<String> queries;
-    private ArrayList<Integer> deletedIndex;
 
     public static void main(String[] args) {
         launch(args);
@@ -60,12 +61,15 @@ public class QuickCon extends Application {
         rootNode = new BorderPane();
         vBoxLeft = new VBox();
         vBoxCenter = new VBox();
+        vBoxTop = new VBox();
 
         getDatabasesAndTables();
         createToolBar();
         createTree();
+        createMenuBar();
 
         rootNode.setLeft(vBoxLeft);
+        rootNode.setTop(vBoxTop);
 
         Scene myScene = new Scene(rootNode, width, height);
         stage.setScene(myScene);
@@ -75,11 +79,13 @@ public class QuickCon extends Application {
     public void createTable(String tableName){
         vBoxCenter.getChildren().clear();
         createButtons();
-        tableview = new TableView();
         columnNames = new ArrayList<>();
         dataForQueries = new TreeMap<>();
         queries = new ArrayList<>();
-        deletedIndex = new ArrayList<>();
+        tableview = new TableView();
+        tableview.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        tableview.setEditable(true);
+        tableview.setMinHeight(height);
 
         ObservableList<ObservableList> data = FXCollections.observableArrayList();
         try (Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SELECT * FROM " + tableName)) {
@@ -126,8 +132,6 @@ public class QuickCon extends Application {
             ex.printStackTrace();
         }
 
-        tableview.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        tableview.setEditable(true);
         vBoxCenter.getChildren().add(tableview);
         rootNode.setCenter(vBoxCenter);
     }
@@ -146,6 +150,26 @@ public class QuickCon extends Application {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void createMenuBar() {
+        MenuBar menuBar = new MenuBar();
+
+        Menu fileMenu = new Menu("File");
+        MenuItem exitItem = new MenuItem("Exit");
+        fileMenu.getItems().add(exitItem);
+        fileMenu.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                Platform.exit();
+            }
+        });
+
+        Menu editMenu = new Menu("Edit");
+
+        menuBar.getMenus().addAll(fileMenu, editMenu);
+
+        vBoxTop.getChildren().addAll(menuBar);
     }
 
     public void createTree() {
@@ -170,6 +194,7 @@ public class QuickCon extends Application {
         }
         treeView = new TreeView<>(root);
         treeView.setShowRoot(false);
+        treeView.setMinHeight(height);
         treeView.setOnMouseClicked(mouseEvent -> {
             if(mouseEvent.getClickCount() == 2)
             {
@@ -192,6 +217,8 @@ public class QuickCon extends Application {
             reloadTable();
         });
 
+        Separator separator = new Separator(Orientation.VERTICAL);
+
         Button delete = makeButton("-", true, "Delete Row", 0.5f);
         delete.setOnAction(actionEvent -> {
             deleteRow();
@@ -202,16 +229,18 @@ public class QuickCon extends Application {
             submitChanges();
         });
 
-        buttonBox.getChildren().addAll(reload, delete, submit);
+        buttonBox.getChildren().addAll(reload, separator, delete, submit);
         buttonBox.setSpacing(30);
         vBoxCenter.getChildren().add(buttonBox);
     }
 
     public void createToolBar() {
-        MenuButton newDBMS = new MenuButton("+");
+        MenuButton newSys = new MenuButton("+");
         Tooltip tooltip = new Tooltip("New connections to DBMS");
         tooltip.setShowDelay(Duration.seconds(0.5f));
-        newDBMS.setTooltip(tooltip);
+        newSys.setTooltip(tooltip);
+
+        Menu menu = new Menu("Data Source");
 
         MenuItem mySQL = new MenuItem("MySQL");
         mySQL.setOnAction(new EventHandler<ActionEvent>() {
@@ -222,20 +251,25 @@ public class QuickCon extends Application {
 
                 Label labelHost = new Label("Host:");
                 TextField textFieldHost = new TextField();
+                textFieldHost.setMinWidth(300);
 
-                Label label2 = new Label("Port");
+                Region p = new Region();
+                p.setPrefSize(500, 0.0);
+
+                Label labelPort = new Label("Port:");
+                TextField textFieldPort = new TextField();
+                textFieldPort.setMinWidth(300);
 
                 FlowPane flowPane = new FlowPane();
-                flowPane.setHgap(50);
-                flowPane.setMargin(labelHost, new Insets(20, 0, 20, 20));
-                ObservableList list = flowPane.getChildren();
-                list.addAll(labelHost, textFieldHost);
+                flowPane.setHgap(40);
+                flowPane.setMargin(labelHost, new Insets(10, 0, 10, 20));
+                flowPane.setMargin(labelPort, new Insets(10, 0, 10, 20));
+                flowPane.getChildren().addAll(labelHost, textFieldHost, p, labelPort, textFieldPort);
 
                 TabPane tabPane = new TabPane();
+                tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
                 Tab tab1 = new Tab("General");
                 tabPane.getTabs().addAll(tab1);
-
-
 
                 VBox vBox = new VBox();
                 vBox.getChildren().addAll(flowPane, tabPane);
@@ -246,10 +280,13 @@ public class QuickCon extends Application {
                 newWindow.show();
             }
         });
-        newDBMS.getItems().addAll(mySQL);
+        MenuItem postgreSQL = new MenuItem("PostgreSQL");
+
+        menu.getItems().addAll(mySQL, postgreSQL);
+        newSys.getItems().addAll(menu);
 
         ToolBar toolBar = new ToolBar();
-        toolBar.getItems().addAll(newDBMS);
+        toolBar.getItems().addAll(newSys);
         vBoxLeft.getChildren().add(toolBar);
     }
 
@@ -301,14 +338,13 @@ public class QuickCon extends Application {
 //            e.printStackTrace();
 //        }
 
-        ObservableList o = (ObservableList) tableview.getSelectionModel().getSelectedItem();
-        int indexRow = tableview.getSelectionModel().getSelectedIndex();
-        if (o != null && !deletedIndex.contains(indexRow)) {
+        ObservableList selectedItems = (ObservableList) tableview.getSelectionModel().getSelectedItems();
+        for (int i = 0; i < selectedItems.size(); i++) {
+            ObservableList selectedIts = (ObservableList) selectedItems.get(i);
             tableview.setStyle("-fx-selection-bar-non-focused: salmon;");
-            String deleteQ = "DELETE FROM " + tableN + " WHERE " + columnNames.get(0) + "='" + o.get(0) + "'";
+            String deleteQ = "DELETE FROM " + tableN + " WHERE " + columnNames.get(0) + "='" + selectedIts.get(0) + "'";
             queries.add(deleteQ);
         }
-        deletedIndex.add(indexRow);
     }
 
     public void reloadTable() {
@@ -319,10 +355,6 @@ public class QuickCon extends Application {
         createToolBar();
         createTree();
         createTable(tableN);
-    }
-
-    public void reloadTree() {
-
     }
 
     public TreeItem<String> makeBranch(String title, TreeItem<String> parent) {
