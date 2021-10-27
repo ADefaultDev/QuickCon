@@ -122,7 +122,7 @@ public class QuickCon extends Application {
             }
             while(result.next()){
                 ObservableList<String> row = FXCollections.observableArrayList();
-                for(int i=1 ; i <= result.getMetaData().getColumnCount(); i++) {
+                for(int i = 1 ; i <= result.getMetaData().getColumnCount(); i++) {
                     row.add(result.getString(i));
                 }
                 data.add(row);
@@ -219,6 +219,11 @@ public class QuickCon extends Application {
 
         Separator separator = new Separator(Orientation.VERTICAL);
 
+        Button add = makeButton("+", true, "Add Row", 0.5f);
+        add.setOnAction(actionEvent -> {
+            addRow();
+        });
+
         Button delete = makeButton("-", true, "Delete Row", 0.5f);
         delete.setOnAction(actionEvent -> {
             deleteRow();
@@ -229,7 +234,7 @@ public class QuickCon extends Application {
             submitChanges();
         });
 
-        buttonBox.getChildren().addAll(reload, separator, delete, submit);
+        buttonBox.getChildren().addAll(reload, separator, add, delete, submit);
         buttonBox.setSpacing(30);
         vBoxCenter.getChildren().add(buttonBox);
     }
@@ -325,6 +330,17 @@ public class QuickCon extends Application {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void addRow() {
+        ObservableList<String> row = FXCollections.observableArrayList();
+        for (String name: columnNames) {
+            row.add(name);
+        }
+        tableview.getItems().add(row);
+        String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
+        queries.add(insertQ);
+
     }
 
     public void deleteRow() {
