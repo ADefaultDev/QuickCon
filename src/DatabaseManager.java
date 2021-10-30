@@ -45,7 +45,6 @@ class DatabaseManager {
 
     private void readDatabaseProperties() throws IOException {
         props = new Properties();
-
         try {
             try (InputStream in = Files.newInputStream(Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toURI()))) {
                 props.load(in);
