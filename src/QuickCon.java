@@ -24,7 +24,7 @@ import java.util.TreeMap;
 
 public class QuickCon extends Application {
 
-    private static final String version = "0.2";
+    private static final String version = "0.3";
     private static final String title = "QuickCon " + version;
     private static final int width = 1440; // 960 // 1440
     private static final int height = 810; // 540 // 810
@@ -38,7 +38,7 @@ public class QuickCon extends Application {
     private TableView tableView;
 
     private String tableN;
-    private ArrayList<String> databaseNames, tableNames;
+    private ArrayList<String> tableNames;
     private ArrayList<String> columnNames;
 
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
@@ -52,7 +52,7 @@ public class QuickCon extends Application {
     public void start(Stage none) {
         stage = none;
         stage.setTitle(title);
-        databaseManager = new DatabaseManager();
+        databaseManager = new DatabaseManager("");
 
         rootNode = new BorderPane();
         vBoxLeft = new VBox();
@@ -135,17 +135,10 @@ public class QuickCon extends Application {
         rootNode.setCenter(vBoxCenter);
     }
 
-
-
     private void getDatabasesAndTables() {
         //get names of databases and their tables
-        databaseNames = new ArrayList<>();
+
         tableNames = new ArrayList<>();
-        try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW DATABASES")) {
-            while (result.next()) databaseNames.add(result.getString(1));
-        } catch (SQLException ex){
-            ex.printStackTrace();
-        }
         try(Statement stat = DatabaseManager.getConnection().createStatement(); ResultSet result = stat.executeQuery("SHOW TABLES")) {
             while (result.next()) tableNames.add(result.getString(1));
         } catch (SQLException ex) {
@@ -175,62 +168,61 @@ public class QuickCon extends Application {
         TreeItem<String> DBMS = makeBranch("MySQL - @localhost", root);
         DBMS.setExpanded(true);
         //Create tree for databases and their tables
-        for (String databaseName: databaseNames) {
-            TreeItem<String> database = makeBranch(databaseName, DBMS);
+        String[] allDB = databaseManager.getAllDatabases();
+        for (String db:
+                allDB) {
+            TreeItem<String> database = makeBranch(db, DBMS);
             database.setExpanded(true);
             String currentDatabase = database.getValue();
-            String[] allDB = databaseManager.getAllDatabases();
-            /*if (currentDatabase.equals(databaseManager.getDatabase())) {
-                System.out.println(databaseManager.getDatabase().toString());
+            if (currentDatabase.equals(db) && databaseManager.getDbName().equals(db)) {
                 TreeItem<String> nodeTable = makeBranch("tables", database); // should be one block higher
                 nodeTable.setExpanded(true);
                 for (String nameTable: tableNames) {
                     TreeItem<String> tableDB = makeBranch(nameTable, nodeTable);
                     tableDB.setExpanded(true);
                 }
-            }*/
-            for (String db:
-                 allDB) {
-                if (currentDatabase.equals(db) && databaseManager.getDbName().equals(db)) {
-                    System.out.println(db);
-                    TreeItem<String> nodeTable = makeBranch("tables", database); // should be one block higher
-                    nodeTable.setExpanded(true);
-                    for (String nameTable: tableNames) {
-                        TreeItem<String> tableDB = makeBranch(nameTable, nodeTable);
-                        tableDB.setExpanded(true);
-                    }
-                }
             }
-
         }
+
+
         treeView = new TreeView<>(root);
         treeView.setShowRoot(false);
         treeView.setMinHeight(height);
         treeView.setOnMouseClicked(mouseEvent -> {
             if(mouseEvent.getClickCount() == 2)
             {
-                TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
-                if (item.getValue() != null) {
-                    //If item == table, show table
-                    if (item.getParent().getValue().equals("tables")) {
-                        tableN = item.getValue();
-                        createTable(tableN);
-                    }
-                    //If item == Database, show table
-                    else if(item.getParent().getValue().equals("MySQL - @localhost")){
-                        System.out.println("Selected database:" + item.getValue());
-                        databaseManager = new DatabaseManager(item.getValue());
-                        getDatabasesAndTables();
-                        vBoxLeft.getChildren().clear();
-                        createToolBar();
-                        createTree();
-
-                    }
-                }
+                updateTree();
             }
         });
 
         vBoxLeft.getChildren().add(treeView);
+    }
+
+    private void updateTree(){
+        TreeItem<String> item = treeView.getSelectionModel().getSelectedItem();
+        try {
+            if (item.getValue() != null) {
+                //If item == table, show table
+                if (item.getParent().getValue().equals("tables")) {
+                    tableN = item.getValue();
+                    createTable(tableN);
+                }
+                //If item == Database, show table
+                else if (item.getParent().getValue().equals("MySQL - @localhost")) {
+                    System.out.println("Selected database:" + item.getValue());
+                    try {
+                        DatabaseManager.getConnection().close();
+                    }
+                    catch (SQLException ignored){}
+                    databaseManager = new DatabaseManager(item.getValue());
+                    getDatabasesAndTables();
+                    vBoxLeft.getChildren().clear();
+                    vBoxCenter.getChildren().clear();
+                    createToolBar();
+                    createTree();
+                }
+            }
+        }catch (NullPointerException ignored){ }
     }
 
     private void createButtons() {
