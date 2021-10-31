@@ -331,9 +331,17 @@ public class QuickCon extends Application {
             dataForQueries.clear();
 
             for (String query: queries) {
-                int count = statement.executeUpdate(query);
+                int count=0;
+                try {
+                    count = statement.executeUpdate(query);
+                }
+                catch(java.sql.SQLIntegrityConstraintViolationException e){
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot delete or update: a foreign key constraint fails", ButtonType.CLOSE);
+                    alert.showAndWait();
+                }
                 if (count > 0) {
-                    System.out.println("Successful query: " + query);
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, ("Successful query!"), ButtonType.OK );
+                    alert.showAndWait();
                 }
             }
             queries.clear();
