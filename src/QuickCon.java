@@ -42,7 +42,9 @@ public class QuickCon extends Application {
     private ArrayList<String> columnNames;
 
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
+    private TreeMap<String, TreeMap<String, String>> dataForQueriesForNewRow;
     private ArrayList<String> queries;
+    private ArrayList<Integer> indexNewRows;
 
     public static void main(String[] args) {
         launch(args);
@@ -77,8 +79,10 @@ public class QuickCon extends Application {
         createButtons();
         columnNames = new ArrayList<>();
         dataForQueries = new TreeMap<>();
+        dataForQueriesForNewRow = new TreeMap<>();
         queries = new ArrayList<>();
         tableView = new TableView<String>();
+        indexNewRows = new ArrayList<Integer>();
 
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableView.setEditable(true);
@@ -99,19 +103,36 @@ public class QuickCon extends Application {
                     String oldValue = t.getOldValue();
                     String newValue = t.getNewValue();
                     if (!oldValue.equals(newValue)) {
-                        int column = t.getTablePosition().getColumn();
-                        int row = t.getTablePosition().getRow();
-                        t.getTableView().getItems().get(row).set(column, newValue);
+                        int indexEditedCell = tableView.getSelectionModel().getSelectedIndex()+1;
+                        if (indexNewRows.contains(indexEditedCell)) {
+                            int column = t.getTablePosition().getColumn();
+                            int row = t.getTablePosition().getRow();
+                            t.getTableView().getItems().get(row).set(column, newValue);
 
-                        String key = (String) t.getTableView().getItems().get(row).get(0);
-                        TreeMap<String, String> argument;
-                        if (dataForQueries.containsKey(key)) {
-                            argument = dataForQueries.get(key);
+                            String key = (String) t.getTableView().getItems().get(row).get(0);
+                            TreeMap<String, String> argument;
+                            if (dataForQueriesForNewRow.containsKey(key)) {
+                                argument = dataForQueriesForNewRow.get(key);
+                            } else {
+                                argument = new TreeMap<>();
+                            }
+                            argument.put(columnNames.get(column), newValue);
+                            dataForQueriesForNewRow.put(key, argument);
                         } else {
-                            argument = new TreeMap<>();
+                            int column = t.getTablePosition().getColumn();
+                            int row = t.getTablePosition().getRow();
+                            t.getTableView().getItems().get(row).set(column, newValue);
+
+                            String key = (String) t.getTableView().getItems().get(row).get(0);
+                            TreeMap<String, String> argument;
+                            if (dataForQueries.containsKey(key)) {
+                                argument = dataForQueries.get(key);
+                            } else {
+                                argument = new TreeMap<>();
+                            }
+                            argument.put(columnNames.get(column), newValue);
+                            dataForQueries.put(key, argument);
                         }
-                        argument.put(columnNames.get(column), newValue);
-                        dataForQueries.put(key, argument);
                     }
                 });
                 col.setSortable(false);
@@ -169,8 +190,7 @@ public class QuickCon extends Application {
         DBMS.setExpanded(true);
         //Create tree for databases and their tables
         String[] allDB = databaseManager.getAllDatabases();
-        for (String db:
-                allDB) {
+        for (String db: allDB) {
             TreeItem<String> database = makeBranch(db, DBMS);
             database.setExpanded(true);
             String currentDatabase = database.getValue();
@@ -310,14 +330,35 @@ public class QuickCon extends Application {
 
     private void submitChanges() {
         try(Statement statement = DatabaseManager.getConnection().createStatement()) {
-//            String updateQ = "UPDATE wp_terms SET name='r1r', slug='z1z', term_group=5 WHERE term_id=2;";
-//            String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
+//            create a INSERT request and add it to the array
+            String startInsert = "INSERT INTO " + tableN + " (";
+            for (String key: dataForQueriesForNewRow.keySet()) {
+                StringBuilder arg = new StringBuilder(startInsert);
+                for (String column: columnNames) {
+                    arg.append(column);
+                    if (!column.equals(columnNames.get(columnNames.size()-1))){
+                        arg.append(", ");
+                    }
+                }
+                arg.append(") VALUES (");
+                dataForQueriesForNewRow.get(key).remove(dataForQueriesForNewRow.get(key).lastKey());
+                arg.append("'").append(key).append("', ");
+                for (String key2: dataForQueriesForNewRow.get(key).keySet()) {
+                    arg.append("'").append(dataForQueriesForNewRow.get(key).get(key2)).append("'");
+                    if (!dataForQueriesForNewRow.get(key).lastKey().equals(key2)) {
+                        arg.append(", ");
+                    }
+                }
+                arg.append(");");
+                queries.add(String.valueOf(arg));
+            }
+            dataForQueriesForNewRow.clear();
 
 //            create a UPDATE request and add it to the array
-            String start = "UPDATE " + tableN + " SET ";
+            String startUpdate = "UPDATE " + tableN + " SET ";
             for (String key: dataForQueries.keySet()) {
                 StringBuilder arg = new StringBuilder();
-                arg.append(start);
+                arg.append(startUpdate);
                 for (String key2: dataForQueries.get(key).keySet()) {
                     arg.append(key2).append("=").append("'").append(dataForQueries.get(key).get(key2)).append("'");
                     if (!dataForQueries.get(key).lastKey().equals(key2)) {
@@ -327,16 +368,15 @@ public class QuickCon extends Application {
                 arg.append(" WHERE ").append(columnNames.get(0)).append("=").append("'").append(key).append("'");
                 queries.add(String.valueOf(arg));
             }
-//            System.out.println(dataForQueries);
             dataForQueries.clear();
 
             for (String query: queries) {
-                int count=0;
+                int count = 0;
                 try {
                     count = statement.executeUpdate(query);
                 }
                 catch(java.sql.SQLIntegrityConstraintViolationException e){
-                    Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot delete or update: a foreign key constraint fails", ButtonType.CLOSE);
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot delete, update or insert: a foreign key constraint fails", ButtonType.CLOSE);
                     alert.showAndWait();
                 }
                 if (count > 0) {
@@ -345,7 +385,6 @@ public class QuickCon extends Application {
                 }
             }
             queries.clear();
-
             DatabaseManager.getConnection().commit();
             createTable(tableN);
         } catch (SQLException ex) {
@@ -357,9 +396,12 @@ public class QuickCon extends Application {
         ObservableList<String> row = FXCollections.observableArrayList();
         row.addAll(columnNames);
         tableView.getItems().add(row);
-        String insertQ = "INSERT INTO wp_terms (name, slug, term_group) VALUES ('test1', 'test2', '5');";
-        queries.add(insertQ);
 
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Add all values to new line (Considering Data Type)", ButtonType.OK);
+        alert.showAndWait();
+
+        int indexLastRow = tableView.getItems().size();
+        indexNewRows.add(indexLastRow);
     }
 
     private void deleteRow() {

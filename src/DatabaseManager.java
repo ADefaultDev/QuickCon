@@ -76,7 +76,9 @@ class DatabaseManager {
         return dbName;
     }
 
-    String[] getAllDatabases(){return props.getProperty("jdbc.databases").split(",");}
+    String[] getAllDatabases(){
+        return props.getProperty("jdbc.databases").split(",");
+    }
 
 
 }
