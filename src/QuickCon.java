@@ -33,6 +33,7 @@ public class QuickCon extends Application {
     private BorderPane rootNode;
     private VBox vBoxLeft, vBoxCenter, vBoxRight, vBoxTop, vBoxBottom;
 
+    private ConfigWindow configWindow;
     private DatabaseManager databaseManager;
     private TreeView<String> treeView;
     private TableView tableView;
@@ -142,9 +143,13 @@ public class QuickCon extends Application {
                 ObservableList<String> row = FXCollections.observableArrayList();
                 for(int i = 1 ; i <= result.getMetaData().getColumnCount(); i++) {
                     row.add(result.getString(i));
+
                 }
                 data.add(row);
             }
+            for (int i=1;i<=result.getMetaData().getColumnCount();i++)
+                System.out.println(result.getMetaData().getColumnClassName(i));
+
 
             tableView.setItems(data);
 
@@ -176,6 +181,12 @@ public class QuickCon extends Application {
         fileMenu.setOnAction(actionEvent -> Platform.exit());
 
         Menu editMenu = new Menu("Edit");
+        MenuItem editItem = new MenuItem("Configuration");
+        editMenu.getItems().add(editItem);
+        editMenu.setOnAction(actionEvent ->{
+            configWindow = new ConfigWindow();
+            configWindow.createWindow();
+        });
 
         menuBar.getMenus().addAll(fileMenu, editMenu);
 
@@ -369,20 +380,18 @@ public class QuickCon extends Application {
                 queries.add(String.valueOf(arg));
             }
             dataForQueries.clear();
-
-            for (String query: queries) {
+            try {
                 int count = 0;
-                try {
+                for (String query : queries)
                     count = statement.executeUpdate(query);
-                }
-                catch(java.sql.SQLIntegrityConstraintViolationException e){
-                    Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot delete, update or insert: a foreign key constraint fails", ButtonType.CLOSE);
+                if(count>0) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, ("Successful query!"), ButtonType.OK);
                     alert.showAndWait();
                 }
-                if (count > 0) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, ("Successful query!"), ButtonType.OK );
-                    alert.showAndWait();
-                }
+
+            }catch(java.sql.SQLIntegrityConstraintViolationException e){
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Cannot delete, update or insert: a foreign key constraint fails", ButtonType.CLOSE);
+                alert.showAndWait();
             }
             queries.clear();
             DatabaseManager.getConnection().commit();
