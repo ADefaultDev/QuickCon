@@ -1,4 +1,3 @@
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,8 +8,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,6 +19,7 @@ class ConfigWindow{
     private HBox subContainer;
     private VBox container;
     private Properties props;
+    private TextField usernameField, urlField, pasField, databasesField;
 
     ConfigWindow(){
 
@@ -52,39 +51,65 @@ class ConfigWindow{
         }
 
         createURLEditing();
+        createDBEditing();
         createUsernameEditing();
         createPasswordEditing();
         container.getChildren().add(button);
-
         newWindow.show();
+
+        button.setOnAction(actionEvent -> {
+            System.out.println(Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toString());
+            String filePath = Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toString();
+            filePath = filePath.substring(5);
+            try (PrintWriter out = new PrintWriter(new BufferedWriter(
+                    new FileWriter(filePath, false)))) {
+                out.println("jdbc.url=" + urlField.getText());
+                out.println("jdbc.databases=" + databasesField.getText());
+                out.println("jdbc.username=" + usernameField.getText());
+                out.println("jdbc.password=" + pasField.getText());
+                newWindow.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+
+        });
+
     }
 
     private void createURLEditing(){
         subContainer = new HBox();
         Label username = new Label("Username:  ");
-        TextField usernameField = new TextField(props.getProperty("jdbc.username"));
+        usernameField = new TextField(props.getProperty("jdbc.username"));
         subContainer.getChildren().addAll(username,usernameField);
+        subContainer.setAlignment(Pos.CENTER_LEFT);
+        container.getChildren().add(subContainer);
+    }
+
+    private void createDBEditing(){
+        subContainer = new HBox();
+        Label databases = new Label("Databases:  ");
+        databasesField = new TextField(props.getProperty("jdbc.databases"));
+        subContainer.getChildren().addAll(databases,databasesField);
+        subContainer.setAlignment(Pos.CENTER_LEFT);
         container.getChildren().add(subContainer);
     }
 
     private void createUsernameEditing(){
         subContainer = new HBox();
         Label URL = new Label("URL:  ");
-        TextField urlField = new TextField(props.getProperty("jdbc.url"));
+        urlField = new TextField(props.getProperty("jdbc.url"));
         subContainer.getChildren().addAll(URL, urlField);
+        subContainer.setAlignment(Pos.CENTER_LEFT);
         container.getChildren().add(subContainer);
     }
 
     private void createPasswordEditing(){
         subContainer = new HBox();
         Label password = new Label("Password:  ");
-        TextField pasField = new TextField(props.getProperty("jdbc.password"));
+        pasField = new TextField(props.getProperty("jdbc.password"));
         subContainer.getChildren().addAll(password,pasField);
+        subContainer.setAlignment(Pos.CENTER_LEFT);
         container.getChildren().add(subContainer);
 
     }
-
-
-
-
 }
