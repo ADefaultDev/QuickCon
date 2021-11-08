@@ -3,13 +3,16 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.DragEvent;
 import javafx.scene.layout.*;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,6 +21,7 @@ import javafx.stage.Stage;
 import javafx.scene.control.TableColumn.CellEditEvent;
 import javafx.util.Duration;
 
+import java.nio.channels.IllegalChannelGroupException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -55,16 +59,22 @@ public class QuickCon extends Application {
     public void start(Stage none) {
         stage = none;
         stage.setTitle(title);
-        databaseManager = new DatabaseManager("");
-
         rootNode = new BorderPane();
         vBoxLeft = new VBox();
         vBoxCenter = new VBox();
         vBoxTop = new VBox();
+        try {
+            databaseManager = new DatabaseManager("");
+            createToolBar();
+            getDatabasesAndTables();
+            createTree();
+        }
+        catch (SQLException e){
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Invalid DB, check configuration file", ButtonType.OK);
+            alert.showAndWait();
+        }
 
-        getDatabasesAndTables();
-        createToolBar();
-        createTree();
+
         createMenuBar();
 
         rootNode.setLeft(vBoxLeft);
@@ -102,6 +112,7 @@ public class QuickCon extends Application {
                 col.setCellFactory(TextFieldTableCell.forTableColumn());
                 col.setOnEditCommit((EventHandler<CellEditEvent<ObservableList, String>>) t -> {
                     String oldValue = t.getOldValue();
+                    System.out.println("selected");
                     String newValue = t.getNewValue();
                     if (!oldValue.equals(newValue)) {
                         int indexEditedCell = tableView.getSelectionModel().getSelectedIndex()+1;
@@ -172,25 +183,45 @@ public class QuickCon extends Application {
         }
     }
 
+
+
     private void createMenuBar() {
         MenuBar menuBar = new MenuBar();
-
         Menu fileMenu = new Menu("File");
         MenuItem exitItem = new MenuItem("Exit");
         fileMenu.getItems().add(exitItem);
-        fileMenu.setOnAction(actionEvent -> Platform.exit());
 
         Menu editMenu = new Menu("Edit");
         MenuItem editItem = new MenuItem("Configuration");
         editMenu.getItems().add(editItem);
         editMenu.setOnAction(actionEvent ->{
-            configWindow = new ConfigWindow();
-            configWindow.createWindow();
+                configWindow = new ConfigWindow();
+                configWindow.addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, windowEvent -> {
+                    System.out.println("recon");
+                    reconnect();
+                });
         });
+
+
+
+
 
         menuBar.getMenus().addAll(fileMenu, editMenu);
 
         vBoxTop.getChildren().addAll(menuBar);
+    }
+
+    private void reconnect(){
+        try {
+            databaseManager = new DatabaseManager("");
+            createToolBar();
+            getDatabasesAndTables();
+            createTree();
+            reloadTable();
+        }
+        catch (SQLException e){
+            e.printStackTrace();
+        }
     }
 
     private void createTree() {
@@ -245,7 +276,13 @@ public class QuickCon extends Application {
                         DatabaseManager.getConnection().close();
                     }
                     catch (SQLException ignored){}
-                    databaseManager = new DatabaseManager(item.getValue());
+                    try {
+                        databaseManager = new DatabaseManager(item.getValue());
+                    }catch (SQLException e){
+                        Alert alert = new Alert(Alert.AlertType.WARNING, ("Invalid DB, check your configuration file"), ButtonType.OK);
+                        alert.showAndWait();
+                    }
+
                     getDatabasesAndTables();
                     vBoxLeft.getChildren().clear();
                     vBoxCenter.getChildren().clear();

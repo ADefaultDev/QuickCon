@@ -16,7 +16,7 @@ class DatabaseManager {
     private String dbName="";
 
 
-    DatabaseManager(String dbName) {
+    DatabaseManager(String dbName) throws SQLException {
         try {
             readDatabaseProperties();
             this.dbName=dbName;
@@ -24,9 +24,6 @@ class DatabaseManager {
             connection.setAutoCommit(false);
         } catch (IOException ex) {
             ex.printStackTrace();
-        } catch (SQLException ex) {
-            for(Throwable t: ex)
-                t.printStackTrace();
         }
     }
 
@@ -34,7 +31,6 @@ class DatabaseManager {
         props = new Properties();
         try {
             try (InputStream in = Files.newInputStream(Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toURI()))) {
-
                 props.load(in);
             }
         } catch (URISyntaxException ex) {

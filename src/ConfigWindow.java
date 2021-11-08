@@ -1,3 +1,6 @@
+import javafx.event.Event;
+import javafx.event.EventTarget;
+import javafx.event.EventType;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -7,6 +10,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -15,22 +20,18 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Properties;
 
-class ConfigWindow{
+class ConfigWindow extends Window {
     private HBox subContainer;
     private VBox container;
     private Properties props;
     private TextField usernameField, urlField, pasField, databasesField;
 
+
     ConfigWindow(){
-
-    }
-
-    void createWindow(){
         Stage newWindow = new Stage();
         newWindow.setTitle("Configuration");
 
         Button button = new Button("OK");
-        button.setOnAction(event -> newWindow.close());
 
         container = new VBox();
         subContainer = new HBox();
@@ -58,7 +59,6 @@ class ConfigWindow{
         newWindow.show();
 
         button.setOnAction(actionEvent -> {
-            System.out.println(Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toString());
             String filePath = Objects.requireNonNull(this.getClass().getClassLoader().getResource("database.properties")).toString();
             filePath = filePath.substring(5);
             try (PrintWriter out = new PrintWriter(new BufferedWriter(
@@ -67,13 +67,15 @@ class ConfigWindow{
                 out.println("jdbc.databases=" + databasesField.getText());
                 out.println("jdbc.username=" + usernameField.getText());
                 out.println("jdbc.password=" + pasField.getText());
-                newWindow.close();
+
+
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             }
+            this.fireEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSE_REQUEST));
+            newWindow.close();
 
         });
-
     }
 
     private void createURLEditing(){
@@ -113,3 +115,4 @@ class ConfigWindow{
 
     }
 }
+
