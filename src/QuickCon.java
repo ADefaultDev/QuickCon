@@ -51,7 +51,7 @@ public class QuickCon extends Application {
     private ArrayList<String> queries;
     private ArrayList<String> dataTypes;
     private ArrayList<Integer> indexNewRows;
-
+    //
 
     public static void main(String[] args) {
         launch(args);
