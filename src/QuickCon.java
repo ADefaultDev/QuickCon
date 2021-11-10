@@ -49,7 +49,9 @@ public class QuickCon extends Application {
     private TreeMap<String, TreeMap<String, String>> dataForQueries;
     private TreeMap<String, TreeMap<String, String>> dataForQueriesForNewRow;
     private ArrayList<String> queries;
+    private ArrayList<String> dataTypes;
     private ArrayList<Integer> indexNewRows;
+
 
     public static void main(String[] args) {
         launch(args);
@@ -94,6 +96,7 @@ public class QuickCon extends Application {
         queries = new ArrayList<>();
         tableView = new TableView<String>();
         indexNewRows = new ArrayList<Integer>();
+        dataTypes = new ArrayList<>();
 
         tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tableView.setEditable(true);
@@ -105,48 +108,15 @@ public class QuickCon extends Application {
             for(int i = 0 ; i < result.getMetaData().getColumnCount(); i++){
                 final int j = i;
                 TableColumn col = new TableColumn(result.getMetaData().getColumnName(1 + i));
+                System.out.println(result.getMetaData().getColumnClassName(i+1));
+                dataTypes.add(result.getMetaData().getColumnClassName(i+1));
+
                 columnNames.add(result.getMetaData().getColumnName(1 + i));
                 col.setCellValueFactory((Callback<CellDataFeatures<ObservableList, String>, ObservableValue<String>>) param ->
                         new SimpleStringProperty(param.getValue().get(j).toString()));
                 //Accept changes in the table and overwrites them
                 col.setCellFactory(TextFieldTableCell.forTableColumn());
-                col.setOnEditCommit((EventHandler<CellEditEvent<ObservableList, String>>) t -> {
-                    String oldValue = t.getOldValue();
-                    System.out.println("selected");
-                    String newValue = t.getNewValue();
-                    if (!oldValue.equals(newValue)) {
-                        int indexEditedCell = tableView.getSelectionModel().getSelectedIndex()+1;
-                        if (indexNewRows.contains(indexEditedCell)) {
-                            int column = t.getTablePosition().getColumn();
-                            int row = t.getTablePosition().getRow();
-                            t.getTableView().getItems().get(row).set(column, newValue);
-
-                            String key = (String) t.getTableView().getItems().get(row).get(0);
-                            TreeMap<String, String> argument;
-                            if (dataForQueriesForNewRow.containsKey(key)) {
-                                argument = dataForQueriesForNewRow.get(key);
-                            } else {
-                                argument = new TreeMap<>();
-                            }
-                            argument.put(columnNames.get(column), newValue);
-                            dataForQueriesForNewRow.put(key, argument);
-                        } else {
-                            int column = t.getTablePosition().getColumn();
-                            int row = t.getTablePosition().getRow();
-                            t.getTableView().getItems().get(row).set(column, newValue);
-
-                            String key = (String) t.getTableView().getItems().get(row).get(0);
-                            TreeMap<String, String> argument;
-                            if (dataForQueries.containsKey(key)) {
-                                argument = dataForQueries.get(key);
-                            } else {
-                                argument = new TreeMap<>();
-                            }
-                            argument.put(columnNames.get(column), newValue);
-                            dataForQueries.put(key, argument);
-                        }
-                    }
-                });
+                col.setOnEditCommit((EventHandler<CellEditEvent<ObservableList, String>>) t -> editCell(t));
                 col.setSortable(false);
                 tableView.getColumns().add(col);
             }
@@ -182,8 +152,6 @@ public class QuickCon extends Application {
             ex.printStackTrace();
         }
     }
-
-
 
     private void createMenuBar() {
         MenuBar menuBar = new MenuBar();
@@ -478,6 +446,58 @@ public class QuickCon extends Application {
         createToolBar();
         createTree();
         createTable(tableN);
+    }
+
+    private void checkType(String value, Object type) throws java.lang.NumberFormatException{
+        if(type.equals("java.lang.Integer")) {
+            Integer.parseInt(value);
+        }
+    }
+
+    private void editCell(CellEditEvent<ObservableList, String> t){
+        {
+            String oldValue = t.getOldValue();
+            String newValue = t.getNewValue();
+            if (!oldValue.equals(newValue)) {
+                int indexEditedCell = tableView.getSelectionModel().getSelectedIndex()+1;
+                try {
+                    checkType(newValue, dataTypes.get(indexEditedCell - 1));
+                }catch (NumberFormatException e){
+                    newValue=oldValue;
+                    Alert alert = new Alert(Alert.AlertType.WARNING, ("Invalid data type"), ButtonType.OK);
+                    alert.showAndWait();
+                }
+
+                if (indexNewRows.contains(indexEditedCell)) {
+                    int column = t.getTablePosition().getColumn();
+                    int row = t.getTablePosition().getRow();
+                    t.getTableView().getItems().get(row).set(column, newValue);
+                    String key = (String) t.getTableView().getItems().get(row).get(0);
+                    TreeMap<String, String> argument;
+                    if (dataForQueriesForNewRow.containsKey(key)) {
+                        argument = dataForQueriesForNewRow.get(key);
+                    } else {
+                        argument = new TreeMap<>();
+                    }
+                    argument.put(columnNames.get(column), newValue);
+                    dataForQueriesForNewRow.put(key, argument);
+                } else {
+                    int column = t.getTablePosition().getColumn();
+                    int row = t.getTablePosition().getRow();
+                    t.getTableView().getItems().get(row).set(column, newValue);
+
+                    String key = (String) t.getTableView().getItems().get(row).get(0);
+                    TreeMap<String, String> argument;
+                    if (dataForQueries.containsKey(key)) {
+                        argument = dataForQueries.get(key);
+                    } else {
+                        argument = new TreeMap<>();
+                    }
+                    argument.put(columnNames.get(column), newValue);
+                    dataForQueries.put(key, argument);
+                }
+            }
+        }
     }
 
     private TreeItem<String> makeBranch(String title, TreeItem<String> parent) {
