@@ -108,7 +108,6 @@ public class QuickCon extends Application {
             for(int i = 0 ; i < result.getMetaData().getColumnCount(); i++){
                 final int j = i;
                 TableColumn col = new TableColumn(result.getMetaData().getColumnName(1 + i));
-                System.out.println(result.getMetaData().getColumnClassName(i+1));
                 dataTypes.add(result.getMetaData().getColumnClassName(i+1));
 
                 columnNames.add(result.getMetaData().getColumnName(1 + i));
@@ -128,9 +127,6 @@ public class QuickCon extends Application {
                 }
                 data.add(row);
             }
-            for (int i=1;i<=result.getMetaData().getColumnCount();i++)
-                System.out.println(result.getMetaData().getColumnClassName(i));
-
 
             tableView.setItems(data);
 
@@ -453,6 +449,11 @@ public class QuickCon extends Application {
             case "java.lang.Integer":
                 Integer.parseInt(value);
                 break;
+            case "java.lang.Double":
+                value = value.replace(",",".");
+                Double.parseDouble(value);
+                break;
+
         }
     }
 
