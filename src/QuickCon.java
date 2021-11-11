@@ -448,9 +448,11 @@ public class QuickCon extends Application {
         createTable(tableN);
     }
 
-    private void checkType(String value, Object type) throws java.lang.NumberFormatException{
-        if(type.equals("java.lang.Integer")) {
-            Integer.parseInt(value);
+    private void checkType(String value, String type) throws java.lang.NumberFormatException{
+        switch (type) {
+            case "java.lang.Integer":
+                Integer.parseInt(value);
+                break;
         }
     }
 
@@ -460,8 +462,9 @@ public class QuickCon extends Application {
             String newValue = t.getNewValue();
             if (!oldValue.equals(newValue)) {
                 int indexEditedCell = tableView.getSelectionModel().getSelectedIndex()+1;
+                int selectedColumn = t.getTablePosition().getColumn();
                 try {
-                    checkType(newValue, dataTypes.get(indexEditedCell - 1));
+                    checkType(newValue, dataTypes.get(selectedColumn));
                 }catch (NumberFormatException e){
                     newValue=oldValue;
                     Alert alert = new Alert(Alert.AlertType.WARNING, ("Invalid data type"), ButtonType.OK);
